@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require("uuid");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ Serve static files from public folder
+// ✅ SERVE STATIC FILES (CSS, JS, images)
 app.use(express.static(path.join(__dirname, "public")));
 
 // Create uploads folder
@@ -32,7 +32,7 @@ const upload = multer({
 // One-time links
 const links = new Map();
 
-// ✅ Serve index.html instead of inline HTML
+// ✅ USE index.html (not inline HTML)
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
