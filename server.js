@@ -5,7 +5,10 @@ const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// ✅ Serve static files from public folder
+app.use(express.static(path.join(__dirname, "public")));
 
 // Create uploads folder
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
@@ -29,16 +32,9 @@ const upload = multer({
 // One-time links
 const links = new Map();
 
-// Upload page
+// ✅ Serve index.html instead of inline HTML
 app.get("/", (req, res) => {
-  res.send(`
-    <h2>View Once MP4 Upload</h2>
-    <form method="post" action="/upload" enctype="multipart/form-data">
-      <input type="file" name="file" accept="video/mp4" required />
-      <br><br>
-      <button>Upload</button>
-    </form>
-  `);
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // Upload
@@ -64,7 +60,12 @@ app.get("/view/:id", (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html>
-<body style="margin:0;background:black" oncontextmenu="return false">
+<head>
+  <meta charset="UTF-8">
+  <title>View Once</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body oncontextmenu="return false">
   <video autoplay controls controlsList="nodownload">
     <source src="/stream/${path.basename(filePath)}" type="video/mp4">
   </video>
@@ -85,5 +86,5 @@ app.get("/stream/:file", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("Server running at http://localhost:3000");
+  console.log(`Server running on port ${PORT}`);
 });
