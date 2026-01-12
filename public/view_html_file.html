@@ -5,147 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="View once video player">
     <title>View Once Video</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background: #000;
-            overflow: hidden;
-            font-family: "Roboto Flex", sans-serif;
-        }
-
-        video {
-            width: 100vw;
-            height: 100vh;
-            object-fit: contain;
-            background: #000;
-        }
-
-        .warning-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
-            padding: 2rem;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .warning-message {
-            background: rgba(199, 62, 29, 0.9);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-size: 1.4rem;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-
-        .controls-hint {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            z-index: 10;
-            animation: fadeInUp 0.8s ease;
-            opacity: 0.8;
-        }
-
-        .error-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-            color: white;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .error-content {
-            max-width: 500px;
-        }
-
-        .error-content h1 {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-        }
-
-        .error-content p {
-            font-size: 1.6rem;
-            margin-bottom: 2rem;
-            color: #bfc1c0;
-        }
-
-        .btn-home {
-            display: inline-block;
-            background: linear-gradient(135deg, #366b5b, #2e574a);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            text-decoration: none;
-            font-size: 1.4rem;
-            transition: all 0.3s ease;
-        }
-
-        .btn-home:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(70, 134, 114, 0.4);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translate(-50%, 20px);
-            }
-            to {
-                opacity: 0.8;
-                transform: translate(-50%, 0);
-            }
-        }
-
-        @media screen and (max-width: 600px) {
-            .warning-message {
-                font-size: 1.2rem;
-                padding: 0.8rem 1.5rem;
-            }
-            
-            .controls-hint {
-                font-size: 1rem;
-                padding: 0.8rem 1.5rem;
-            }
-
-            .error-content h1 {
-                font-size: 3rem;
-            }
-
-            .error-content p {
-                font-size: 1.4rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body oncontextmenu="return false">
-    <!-- This will be populated by the server -->
+    <video autoplay controls controlsList="nodownload">
+        <source src="" id="videoSource" type="video/mp4">
+    </video>
+
     <div class="warning-overlay" id="warningOverlay">
         <div class="warning-message">
             ⚠️ This video can only be viewed once
@@ -157,7 +23,11 @@
     </div>
 
     <script>
-        // Hide warning overlay after 3 seconds
+        // Dynamically set the video source
+        const videoId = window.location.pathname.split("/").pop();
+        document.getElementById("videoSource").src = `/stream/${videoId}`;
+
+        // Hide warning overlay after 3s
         setTimeout(() => {
             const overlay = document.getElementById('warningOverlay');
             if (overlay) {
@@ -167,7 +37,7 @@
             }
         }, 3000);
 
-        // Hide controls hint after 5 seconds
+        // Hide controls hint after 5s
         setTimeout(() => {
             const hint = document.getElementById('controlsHint');
             if (hint) {
@@ -178,24 +48,19 @@
         }, 5000);
 
         // Prevent right-click
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            return false;
-        });
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
 
         // Prevent keyboard shortcuts for downloading
         document.addEventListener('keydown', (e) => {
-            // Prevent Ctrl+S, Ctrl+Shift+S
-            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-                e.preventDefault();
-                return false;
-            }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) e.preventDefault();
         });
 
-        // Check if video element exists
+        // Auto-play check
         window.addEventListener('load', () => {
             const video = document.querySelector('video');
-            if (!video) {
+            if (video) {
+                video.play().catch(err => console.log('Auto-play prevented'));
+            } else {
                 document.body.innerHTML = `
                     <div class="error-container">
                         <div class="error-content">
@@ -205,11 +70,6 @@
                         </div>
                     </div>
                 `;
-            } else {
-                // Auto-play attempt
-                video.play().catch(err => {
-                    console.log('Auto-play prevented. User interaction required.');
-                });
             }
         });
     </script>
