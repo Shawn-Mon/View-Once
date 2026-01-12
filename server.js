@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require("uuid");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ SERVE STATIC FILES (CSS, JS, images)
+// ✅ Serve static files from public/
 app.use(express.static(path.join(__dirname, "public")));
 
 // Create uploads folder
@@ -32,7 +32,7 @@ const upload = multer({
 // One-time links
 const links = new Map();
 
-// ✅ USE index.html (not inline HTML)
+// ✅ Serve home page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -48,36 +48,27 @@ app.post("/upload", upload.single("file"), (req, res) => {
   `);
 });
 
-// View once (player)
+// ✅ View once (serve view.html)
 app.get("/view/:id", (req, res) => {
-  const filePath = links.get(req.params.id);
+  const id = req.params.id;
+  const filePath = links.get(id);
+
   if (!filePath || !fs.existsSync(filePath)) {
-    return res.status(404).send("Expired");
+    return res.sendFile(path.join(__dirname, "public", "expired.html"));
   }
 
-  links.delete(req.params.id);
+  // Delete link immediately after viewing
+  links.delete(id);
 
-  res.send(`
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>View Once</title>
-  <link rel="stylesheet" href="/style.css">
-</head>
-<body oncontextmenu="return false">
-  <video autoplay controls controlsList="nodownload">
-    <source src="/stream/${path.basename(filePath)}" type="video/mp4">
-  </video>
-</body>
-</html>
-  `);
+  res.sendFile(path.join(__dirname, "public", "view.html"));
 });
 
-// Stream + delete
-app.get("/stream/:file", (req, res) => {
-  const filePath = path.join(__dirname, "uploads", req.params.file);
-  if (!fs.existsSync(filePath)) return res.end();
+// ✅ Stream video
+app.get("/stream/:id", (req, res) => {
+  const id = req.params.id;
+  const filePath = links.get(id);
+
+  if (!filePath || !fs.existsSync(filePath)) return res.end();
 
   res.setHeader("Content-Type", "video/mp4");
   fs.createReadStream(filePath)
