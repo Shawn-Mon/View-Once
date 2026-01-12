@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Upload MP4 videos and create one-time viewable links">
+    <title>🎥 View Once Video Upload</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 View Once Video</h1>
+        <p>Upload an MP4 video and get a one-time viewable link.</p>
+
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" id="fileInput" accept="video/mp4" required />
+            <button type="submit" id="submitBtn">
+                <span class="icon">📤</span>
+                Upload Video
+            </button>
+        </form>
+
+        <div id="result"></div>
+
+        <small>⚠️ Link expires immediately after viewing</small>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        const fileInput = document.getElementById('fileInput');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Validate file
+            if (!fileInput.files[0]) {
+                showMessage('Please select a file', 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (file.type !== 'video/mp4') {
+                showMessage('Only MP4 files are allowed', 'error');
+                return;
+            }
+
+            // Show loading state
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="icon">⏳</span> Uploading...';
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const html = await response.text();
+                
+                // Extract the link from response
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const link = doc.querySelector('a');
+                
+                if (link) {
+                    const href = link.getAttribute('href');
+                    const fullUrl = window.location.origin + href;
+                    
+                    resultDiv.innerHTML = `
+                        <div class="link-display">
+                            <h3>✅ Upload Successful!</h3>
+                            <p>Your one-time video link:</p>
+                            <a href="${href}" target="_blank" id="videoLink">${fullUrl}</a>
+                            <button onclick="copyLink()" style="margin-top: 1rem; width: auto; padding: 0.5rem 1.5rem;">
+                                📋 Copy Link
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Reset form
+                    form.reset();
+                    showMessage('Video uploaded successfully! Share the link above.', 'success');
+                } else {
+                    throw new Error('Invalid response');
+                }
+
+            } catch (error) {
+                showMessage('Upload failed. Please try again.', 'error');
+                console.error('Upload error:', error);
+            } finally {
+                // Reset button
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="icon">📤</span> Upload Video';
+            }
+        });
+
+        function showMessage(message, type) {
+            const existingMsg = document.querySelector('.status-message');
+            if (existingMsg) existingMsg.remove();
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `status-message ${type}`;
+            msgDiv.textContent = message;
+            resultDiv.insertAdjacentElement('afterbegin', msgDiv);
+
+            setTimeout(() => msgDiv.remove(), 5000);
+        }
+
+        function copyLink() {
+            const link = document.getElementById('videoLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                showMessage('Link copied to clipboard!', 'success');
+            }).catch(() => {
+                showMessage('Failed to copy link', 'error');
+            });
+        }
+
+        // File input change handler
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.type !== 'video/mp4') {
+                    showMessage('Please select an MP4 file', 'error');
+                    fileInput.value = '';
+                } else {
+                    const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+                    showMessage(`Selected: ${file.name} (${sizeMB} MB)`, 'success');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
